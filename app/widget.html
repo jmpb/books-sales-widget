@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<meta charset="UTF-8">
+	<title>Zoho Inventory Widget</title>
+	<!-- C3 styles -->
+	<link href="/app/css/c3.css" rel="stylesheet">
+
+	<!-- Our styles -->
+	<link href="/app/css/styles.css" rel="stylesheet">
+
+	<!-- C3 library for plotting charts - requires d3 library so order is important. -->
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.min.js"></script>
+</head>
+
+<body>
+
+	<!-- test -->
+	<div id="chart"></div>
+
+	<script src="https://js.zohostatic.eu/zohofinance/v1/zf_sdk.js"></script>
+	<script>
+	window.onload = function () {
+
+		console.log("Confirmed Sales Widget Loaded.");
+
+		// Test
+		var chart = c3.generate({
+			bindto: '#chart',
+			data: {
+			columns: [
+				['data1', 30, 200, 100, 400, 150, 250],
+				['data2', 50, 20, 10, 40, 15, 25]
+			]
+			}
+		});
+
+		ZFAPPS.extension.init().then(function (App) {
+
+			//Get invoice data
+			//  ZFAPPS.get('invoice').then(function (res) {
+			// 			//response Handling
+			//  }).catch(function (err) {
+			// 			//error Handling
+			//  });
+ 		});
+
+	};
+</script>
+
+	<script src="./js/extension.js" charset="utf-8"></script>
+
+</body>
+
+</html>
