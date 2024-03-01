@@ -551,3 +551,8 @@ video {
 .flex-row {
   flex-direction: row;
 }
+
+body {
+  max-width: -moz-fit-content;
+  max-width: fit-content;
+}
