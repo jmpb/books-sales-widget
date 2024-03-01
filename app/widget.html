@@ -11,10 +11,13 @@
 	<script type="text/javascript" src="https://js.zohostatic.eu/zohofinance/v1/zf_sdk.js"></script>
 	<script>
 		window.onload = function () {
-			console.log("Confirmed Sales Widget.html Loaded.");
+			ZFAPPS.extension.init().then(function (App) {
+				ZFAPPS.showModal({
+					url: "/app/modal.html"
+				});
+			});
 		};
 	</script>
-	<script src="./js/extension.js" charset="utf-8"></script>
 
 </body>
 
