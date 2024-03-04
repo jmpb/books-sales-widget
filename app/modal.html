@@ -11,8 +11,8 @@
 	<link href="css/saleswidget.css" rel="stylesheet">
 
 	<!-- C3 library for plotting charts - requires d3 library so order is important. -->
-	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.4.10/c3.min.js"></script>
+	<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/5.16.0/d3.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/c3/0.7.20/c3.min.js"></script>
 
 	<!-- Moment JS -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.30.1/moment.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -21,70 +21,39 @@
 
 <body>
 
-	<div class="flex">
-		<div class="col1">
-			<div id="chart"></div>
-		</div>
-		<div class="col2 flex flex-row">
-			<div>
-				<p id="total"></p>
+	<div class="flex" x-data="chartData" @change.debounce="refreshData" @zoho-ready.window="refreshData" x-init="createChart">
+		<div class="col1 min-w-[300px] w-[600px] relative">
+			<div id="spinner" x-show="loading" class="absolute top-1/2 left-1/2 w-full h-full">
+				<p>Loading</p>
 			</div>
-			<div id="time_range"></div>
+			<div id="chart" x-show="!loading" ></div>
+		</div>
+		<div class="col2 flex flex-col">
+			<div class="m-auto p-4">
+				<p id="total" class="font-bold text-lg text-sky-700"></p>
+			</div>
+			<div id="time_range" class="text-lg m-auto p-4">
+				<select x-model="time_range">
+					<option value="daily">Today</option>
+					<option value="weekly">This week</option>
+					<option value="monthly">This month</option>
+				</select>
+			</div>
 		</div>
 	</div>
 	<script type="text/javascript" src="https://js.zohostatic.eu/zohofinance/v1/zf_sdk.js"></script>
+	<script type="text/javascript" src="js/alpineData.js"></script>
 	<script>
 		window.onload = function () {
 
 			console.log("Confirmed Sales modal.html Loaded.");
-			var chart = c3.generate({
-				bindto: '#chart',
-				data: {
-					x: 'label',
-					columns: [
-						['label', '00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11','12','13','14','15','16','17','18','19','20','21','22','23'],
-						['totals', 30, 200, 100, 400, 150, 0, 345, 324, 0, 0, 211, 0, 600, 30, 200, 100, 400, 150, 0, 345, 324, 0, 0, 211, 0, 600]
-					],
-				},
-				axis: {
-					x: {
-						type: 'category',
-						label: {
-							text: 'Time',
-							position: 'outer-middle'
-						}
-					},
-					y: {
-						label: {
-							text: 'Subtotal (£)',
-							position: 'outer-middle'
-						}
-					}
-				}
-			});
 
-			time_range = 'daily';
-
-			ZFAPPS.extension.init().then(async (App) => {
+			ZFAPPS.extension.init().then(async () => {
 				ZFAPPS.invoke('RESIZE', { width: '1000px', height: '800px'})
 					.then(() => { console.log('Resized successfully');
 				});
-				data = await listSales(time_range);
-				return data;
-			}).then((data) => {
-				document.getElementById("total").innerHTML = `£${data.total}`;
-				return bucketData(data, time_range);
-			}).then((chart_data) => {
-				console.log(chart_data);
-				// use chart API to load data
-				chart.load({
-					x: 'label',
-					columns: [
-						chart_data.labels,
-						chart_data.data
-					],
-					unload: true
-				});
+				var zohoReadyEvent = new CustomEvent('zoho-ready');
+				window.dispatchEvent(zohoReadyEvent);
 			});
 		};
 	</script>

@@ -83,28 +83,36 @@ async function listSales(time_period) {
  * @return {Array} - the bucketed data
  */
 function bucketData(order_data, time_range) {
-    time_series_is_days = true;
-    if (time_range != 'daily') {
+    time_series = [];
+    if (time_range == 'monthly') {
         days = moment().daysInMonth();
-        time_series = [...days.keys()];
+        time_series = Array.from({length: days}, (_, i) => i + 1);
+    } else if (time_range == 'weekly') {
+        time_series = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     } else {
-        time_series_is_days = false;
         time_series = [...Array(24).keys()];
     }
     time_series.splice(0,0,'label');
-    buckets = [];
+    buckets = ['totals'];
     // put each order's subtotal in a bucket
     for (let index = 0; index < order_data.orders.length; index++) {
         const order = order_data.orders[index];
         created_time = moment(order.date);
-        bucket_label = time_series_is_days ? created_time.date() : created_time.hour();
+        bucket_label = "";
+        if (time_range == 'daily') {
+            bucket_label = created_time.hour();
+        } else if (time_range == 'weekly') {
+            bucket_label = created_time.isoWeekday();
+        } else {
+            bucket_label = created_time.date();
+        }
         if (!buckets[bucket_label]) {
             buckets[bucket_label] = [];
         }
         buckets[bucket_label].push(order.subtotal);
     }
     // loop through buckets and sum any which have more than one value
-    for (let index = 0; index < time_series.length-1; index++) {
+    for (let index = 1; index < time_series.length; index++) {
         const bucket = buckets[index];
         if (bucket) {
             sum = 0;
@@ -118,7 +126,6 @@ function bucketData(order_data, time_range) {
             buckets[index] = 0;
         }
     }
-    buckets.splice(0,0,'totals');
     bucketed_data = {
         labels: time_series,
         data: buckets
