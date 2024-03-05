@@ -33,7 +33,13 @@ document.addEventListener('alpine:init', () => {
 						label: {
 							text: 'Time',
 							position: 'outer-center'
-						}
+						},
+                        tick: {
+                            multiline: false,
+                            culling: {
+                                max: 10
+                            }
+                        }
 					},
 					y: {
 						label: {
@@ -41,7 +47,10 @@ document.addEventListener('alpine:init', () => {
 							position: 'outer-middle'
 						},
                         tick: {
-                            format: d3locale.format("$,.2f")
+                            format: d3locale.format("$,.2f"),
+                            culling: {
+                                max: 6
+                            }
                         }
 					}
 				},

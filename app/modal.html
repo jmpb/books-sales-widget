@@ -28,12 +28,13 @@
 			</div>
 			<div id="chart" x-show="!loading" ></div>
 		</div>
-		<div class="col2 flex flex-col">
+		<div class="col2 flex flex-col justify-center items-center">
 			<div class="m-auto p-4">
 				<p id="total" class="font-bold text-lg text-sky-700"></p>
 			</div>
-			<div id="time_range" class="text-lg m-auto p-4">
-				<select x-model="time_range">
+			<div id="time_range" class="text-lg m-auto p-4 flex flex-col">
+				<p>Time range:</p>
+				<select x-model="time_range" class="border-solid">
 					<option value="daily">Today</option>
 					<option value="weekly">This week</option>
 					<option value="monthly">This month</option>
