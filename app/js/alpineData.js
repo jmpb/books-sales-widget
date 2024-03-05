@@ -100,5 +100,29 @@ document.addEventListener('alpine:init', () => {
             });
         },
     }));
+
+    Alpine.data('awaitingPaymentChart', () => ({
+        loading: true,
+        total: undefined,
+        top_ap_orders: undefined,
+
+        newAwaitingPaymentData(event) {
+            console.log(event);
+            if (!event) { return; }
+            this.loading = true;
+            sum = 0;
+            for (let index = 0; index < event.length; index++) {
+                const order = event[index];
+                sum += order.subtotal;
+            }
+            this.total = formatCurrencyGBP(sum);
+            if (event.length < 5) {
+                event.length = 5;
+                Array.from(event);
+            }
+            this.top_ap_orders = event;
+            this.loading = false;
+        }
+    }));
 });
 

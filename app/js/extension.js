@@ -39,11 +39,14 @@ async function listSales(time_period) {
             console.log(`No data to display since ${date_from}`);
         }
         filtered_salesorders = [];
+        awaiting_payment_data = [];
         sum_total = 0;
         for (let index = 0; index < salesorders.length; index++) {
             const order = salesorders[index];
             if (order.order_sub_status != "") {
-                // Filter out order as it has a substatus
+                // Filter out order as it has a substatus but add to awaiting payment data.
+                ap_order_data = buildAPOrder(order);
+                ap_order_data ? awaiting_payment_data.push(ap_order_data) : null;
                 continue;
             }
             // Check created_time vs date_from
@@ -66,12 +69,35 @@ async function listSales(time_period) {
 
             filtered_salesorders.push(filtered_order);
         }
+        awaitingPaymentEvent = new CustomEvent("awaiting-payment-data", {"detail": awaiting_payment_data});
+        window.dispatchEvent(awaitingPaymentEvent);
         final_data = {
             total: sum_total,
             orders: filtered_salesorders
         };
         return final_data;
     });
+}
+
+/**
+ * Take in a Zoho sales order as JSON and extract the parts we want.
+ * 
+ * @param {Array} order - an Array of sales order data from Zoho API.
+ * @returns {Array|null} - Either an array of data or null if the order is not applicable.
+ */
+function buildAPOrder(order) {
+    order_created = moment(order.created_time);
+    if (order_created.isBefore(date_from)) {
+        // Skip as it is before the date wanted
+        return null;
+    }
+    return {
+        "order_number": order.salesorder_number,
+        "subtotal": order.total / 1.2,
+        "customer_name": order.customer_name,
+        "date": order_created,
+        "salesperson": order.salesperson_name
+    };
 }
 
 /**
@@ -93,7 +119,7 @@ function bucketData(order_data, time_range) {
         time_series = [...Array(24).keys()];
     }
     time_series.splice(0,0,'label');
-    buckets = ['totals'];
+    buckets = ['Totals'];
     // put each order's subtotal in a bucket
     for (let index = 0; index < order_data.orders.length; index++) {
         const order = order_data.orders[index];
