@@ -12,10 +12,15 @@ var d3locale = d3.formatDefaultLocale({
 
 document.addEventListener('alpine:init', () => {
 
-    Alpine.data('chartData', () => ({
+    Alpine.store('REFRESH_RATE', 15); // Refresh data every x minutes.
+
+    Alpine.data('confirmedSalesChart', () => ({
         time_range: 'daily',
         chart: undefined,
         loading: true,
+        total_string: undefined,
+        last_updated: undefined,
+        next_update: undefined,
 
         createChart() {
             this.chart = c3.generate({
@@ -43,7 +48,7 @@ document.addEventListener('alpine:init', () => {
 					},
 					y: {
 						label: {
-							text: 'Subtotal (£)',
+							text: 'Subtotal',
 							position: 'outer-middle'
 						},
                         tick: {
@@ -68,7 +73,7 @@ document.addEventListener('alpine:init', () => {
             this.loading = true;
             listSales(this.time_range).then((data) => {
                 formatted_total = formatCurrencyGBP(data.total);
-                document.getElementById("total").innerHTML = `${formatted_total}`;
+                this.total_string = `${formatted_total}`;
                 return bucketData(data, this.time_range);
             }).then((chart_data) => {
                 console.log(chart_data);
@@ -81,8 +86,18 @@ document.addEventListener('alpine:init', () => {
                     ],
                     unload: true
                 });
+                if (this.time_range == 'daily') {
+                    this.chart.axis.labels({x: 'Time'});
+                } else if(this.time_range == 'weekly') {
+                    this.chart.axis.labels({x: 'Day'});
+                } else {
+                    this.chart.axis.labels({x: 'Date'});
+                }
+            }).finally(()=> {
+                this.last_updated = `Last updated: ${moment().format("HH:mm:ss")}`;
+                this.next_update = `Next update: ${moment().add(Alpine.store('REFRESH_RATE'), 'minutes').format("HH:mm:ss")}`;
+                this.loading = false;
             });
-            this.loading = false;
         },
     }));
 });

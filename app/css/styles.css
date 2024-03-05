@@ -5,3 +5,7 @@
 body {
     max-width: fit-content;
 }
+
+.c3-axis-x-label, .c3-axis-y-label {
+    @apply font-bold;
+}
