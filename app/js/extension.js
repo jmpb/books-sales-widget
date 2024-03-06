@@ -95,7 +95,7 @@ function buildAPOrder(order) {
         "order_number": order.salesorder_number,
         "subtotal": order.total / 1.2,
         "customer_name": order.customer_name,
-        "date": order_created,
+        "date": order_created.format("Do hh:mma"),
         "salesperson": order.salesperson_name
     };
 }

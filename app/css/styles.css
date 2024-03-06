@@ -9,3 +9,11 @@ body {
 .c3-axis-x-label, .c3-axis-y-label {
     @apply font-bold;
 }
+
+.c3-line {
+    @apply stroke-sky-700;
+}
+
+#data table tr {
+    @apply border-t border-slate-400;
+}

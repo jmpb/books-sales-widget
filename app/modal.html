@@ -56,38 +56,53 @@
 	</div>
 	
 	<h1 class="text-2xl m-4">Awaiting Payment</h1>
-	<div class="flex mb-5 p-4 border-solid rounded border-2 border-slate-300 h-[200px]"
+	<div class="flex mb-5 p-4 border-solid rounded border-2 border-slate-300"
 		x-data="awaitingPaymentChart"
 		@awaiting-payment-data.window="newAwaitingPaymentData($event.detail)">
-		<div class="relative">
+		<div class="relative w-full">
 			<div id="spinner" x-show="loading" class="relative top-1/2 left-1/2 w-full h-full">
 				<p>Loading data...</p>
 				<img src="img/Loading_icon.gif" height="75px" width="75px" alt="Loading spinner" />
 			</div>
 			<div id="data" x-show="!loading">
-				<div class="p-4 mb-4">
+				<div class="pt-4 px-4 w-fit">
 					<p id="total" class="flex flex-col items-start p-2 border-2 border-solid border-sky-900">
 						<span class="text-lg">Total:</span>
-						<span class="font-bold text-xl text-sky-700" x-text="total"></span>
+						<span class="font-bold text-xl text-orange-500" x-text="total"></span>
 					</p>
 				</div>
-				<div class="p-4">
-					<table>
+				<div class="px-4 w-full">
+					<h3 class="text-lg m-2 font-bold">Top 5</h3>
+					<table class="w-full">
 						<tr>
-							<th>Order #</th>
-							<th>Total £</th>
-							<th>Customer</th>
-							<th></th>
+							<th class="text-left">Order</th>
+							<th class="text-left">Total</th>
+							<th class="text-left italic">Customer</th>
+							<th class="text-left">Date</th>
+							<th class="text-right">Salesperson</th>
 						</tr>
-						<template x-for="order in top_ap_orders">
-							<template x-if="order">
-								<tr>
-									<td x-text="order.order_number"></td>
-									<td x-text="order.subtotal"></td>
-									<td x-text="order.customer_name"></td>
-									<td x-text="order.salesperson"></td>
-								</tr>
+						<template x-if="top_ap_orders">
+							<template x-for="order in top_ap_orders">
+								<template x-if="order">
+									<tr>
+										<td class="text-left" x-text="order.order_number"></td>
+										<td class="font-bold text-left" x-text="formatCurrencyGBP(order.subtotal)"></td>
+										<td class="italic text-left" x-text="order.customer_name"></td>
+										<td class="text-xs text-left italic" x-text="order.date"></td>
+										<td class="text-right" x-text="order.salesperson"></td>
+									</tr>
+								</template>
 							</template>
+						</template>
+						<template x-if="!top_ap_orders">
+							<tr>
+								<td colspan="5" class="text-lg italic text-center">No data to display for this period.</td>
+							</tr>
+						</template>
+						<template x-if="top_ap_orders && top_ap_orders.length > 5">
+							<tr>
+								<td colspan="5" class="text-lg italic text-center" x-text="`+ ${top_ap_orders.length - 5} more orders...`"></td>
+							</tr>
 						</template>
 					</table>
 				</div>
@@ -102,7 +117,7 @@
 			console.log("Confirmed Sales modal.html Loaded.");
 
 			ZFAPPS.extension.init().then(async () => {
-				ZFAPPS.invoke('RESIZE', { width: '80%', height: '1000px'})
+				ZFAPPS.invoke('RESIZE', { width: '100%', height: '1000px'})
 					.then(() => { console.log('Resized successfully');
 				});
 
