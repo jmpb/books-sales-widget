@@ -10,6 +10,15 @@ body {
     @apply font-bold;
 }
 
+.c3-axis-y text {
+    @apply text-lg;
+}
+
+.c3-grid line {
+    @apply stroke-slate-300;
+    /* stroke-dasharray: 0; */
+}
+
 .c3-line {
     @apply stroke-sky-700;
 }

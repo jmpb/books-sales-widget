@@ -50,12 +50,8 @@ document.addEventListener('alpine:init', () => {
                         }
 					},
 					y: {
-						label: {
-							text: 'Subtotal',
-							position: 'outer-middle'
-						},
                         tick: {
-                            format: d3locale.format("$,.2f"),
+                            format: d3locale.format("$,.0f"),
                             culling: {
                                 max: 6
                             }
@@ -66,6 +62,15 @@ document.addEventListener('alpine:init', () => {
                     title: function(d) { return 'Sum total for ' + d; },
                     format: {
                         value: d3locale.format("$,.2f")
+                    }
+                },
+                padding: {
+                    left: 100,
+                    top: 25
+                },
+                grid: {
+                    y: {
+                        show: true
                     }
                 }
 			});
