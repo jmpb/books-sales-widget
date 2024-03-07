@@ -737,6 +737,10 @@ body {
   line-height: 1.75rem;
 }
 
+.c3-circle {
+  fill: #dc2626;
+}
+
 .c3-grid line {
   stroke: #cbd5e1;
   /* stroke-dasharray: 0; */

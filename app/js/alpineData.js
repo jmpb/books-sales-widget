@@ -72,6 +72,9 @@ document.addEventListener('alpine:init', () => {
                     y: {
                         show: true
                     }
+                },
+                point: {
+                    r: 4
                 }
 			});
             this.loading = false;
