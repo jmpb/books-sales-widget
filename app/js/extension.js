@@ -7,6 +7,7 @@
  */
 async function listSales(time_period) {
     time_period_queries = await getPeriodDate(time_period);
+    page = 1;
     var list_options = {
         url: 'https://www.zohoapis.eu/books/v3/salesorders',
         method: "GET" ,
@@ -21,6 +22,10 @@ async function listSales(time_period) {
         {
             key: 'sort_column',
             value: 'created_time'
+        },
+        {
+            key: 'page',
+            value: page
         }
     ],
         connection_link_name: 'books_conn'
@@ -52,36 +57,46 @@ async function listSales(time_period) {
         filtered_salesorders = filtered_salesorders.concat(extracted_data.salesorders);
         awaiting_payment_data = awaiting_payment_data.concat(extracted_data.awaiting_payment);
 
-        page = 1;
-        while (page_context.has_more_page) {
-            page += 1;
-            list_options.url_query.push({
-                key: 'page',
-                value: page
-            });
+        if (page_context.has_more_page) {
+            more_pages = true;
+            while (more_pages) {
+                page += 1;
+                list_options.url_query = list_options.url_query.map((param) => {
+                    if (param.key == 'page') {
+                        return {
+                            key: 'page',
+                            value: page
+                        };
+                    }
+                    return param;
+                });
 
-            ZFAPPS.request(list_options).then(async (response) => {
-                if (response.code != 0) {
-                    // something went wrong invoking the books API
-                    console.log("something went wrong invoking the books API");
-                }
-                if (response.data.status_code != 200) {
-                    // something went wrong invoking the books API
-                    console.log(`books API returned ${response.data.status_code} status`);
-                }
-                salesorders = JSON.parse(response.data.body).salesorders;
-                page_context = JSON.parse(response.data.body).page_context;
-                if (!salesorders.length || salesorders.length <= 0) {
-                    // no data to display for this period yet
-                    console.log(`No data to display`);
-                }
-                salesorders = JSON.parse(response.data.body).salesorders;
-                page_context = JSON.parse(response.data.body).page_context;
-                if (!salesorders.length || salesorders.length <= 0) {
-                    // no data to display for this period yet
-                    console.log(`No data to display`);
-                }
-            });
+                await ZFAPPS.request(list_options).then(async (response) => {
+                    if (response.code != 0) {
+                        // something went wrong invoking the books API
+                        console.log("something went wrong invoking the books API");
+                        return;
+                    }
+                    if (response.data.status_code != 200) {
+                        // something went wrong invoking the books API
+                        console.log(`books API returned ${response.data.status_code} status`);
+                        return;
+                    }
+                    salesorders = JSON.parse(response.data.body).salesorders;
+                    page_context = JSON.parse(response.data.body).page_context;
+                    more_pages = page_context.has_more_page;
+                    if (!salesorders.length || salesorders.length <= 0) {
+                        // no data to display for this period yet
+                        console.log(`No data to display`);
+                        return;
+                    }
+                    console.log(`Found ${salesorders.length} salesorders on page ${page_context.page}`);
+                    extracted_data = iterateSalesordersList(salesorders);
+            
+                    filtered_salesorders = filtered_salesorders.concat(extracted_data.salesorders);
+                    awaiting_payment_data = awaiting_payment_data.concat(extracted_data.awaiting_payment);
+                });
+            }
         }
 
         salesorder_count = filtered_salesorders.length;
@@ -109,6 +124,9 @@ function iterateSalesordersList(salesorders) {
     for (let index = 0; index < salesorders.length; index++) {
         const order = salesorders[index];
         if (order.status == "draft") {
+            continue;
+        }
+        if (order.order_sub_status == "cs_cancell") {
             continue;
         }
         if (order.order_sub_status != "") {
@@ -166,6 +184,9 @@ function bucketData(order_data, time_range) {
     time_series = [];
     if (time_range == 'monthly') {
         days = moment().daysInMonth();
+        time_series = Array.from({length: days}, (_, i) => i + 1);
+    } else if (time_range == 'prevmonth') {
+        days = moment().subtract(1, 'months').daysInMonth();
         time_series = Array.from({length: days}, (_, i) => i + 1);
     } else if (time_range == 'weekly' || time_range == 'prevweek') {
         time_series = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -239,6 +260,16 @@ async function getPeriodDate(time_period) {
             query.push({
                 key: 'created_time_after',
                 value: moment().startOf('month').format('YYYY-MM-DD HH:mm')
+            });
+            break;
+        case 'prevmonth':
+            query.push({
+                key: 'created_time_start',
+                value: moment().subtract(1, 'months').startOf('month').format('YYYY-MM-DD HH:mm')
+            });
+            query.push({
+                key: 'created_time_end',
+                value: moment().subtract(1, 'months').endOf('month').format('YYYY-MM-DD HH:mm')
             });
             break;
         case 'weekly':
