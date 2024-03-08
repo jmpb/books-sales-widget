@@ -21,6 +21,7 @@ document.addEventListener('alpine:init', () => {
         total_string: undefined,
         last_updated: undefined,
         next_update: undefined,
+        number_orders_str: 0,
 
         createChart() {
             this.chart = c3.generate({
@@ -85,6 +86,7 @@ document.addEventListener('alpine:init', () => {
             listSales(this.time_range).then((data) => {
                 formatted_total = formatCurrencyGBP(data.total);
                 this.total_string = `${formatted_total}`;
+                this.number_orders_str = `Calculated from ${data.number_sales} orders`;
                 return bucketData(data, this.time_range);
             }).then((chart_data) => {
                 // use chart API to load data
@@ -115,6 +117,7 @@ document.addEventListener('alpine:init', () => {
         loading: true,
         total: "£0.00",
         top_ap_orders: undefined,
+        number_orders_str: 0,
 
         newAwaitingPaymentData(event) {
             if (!event || event.length == 0) { 
@@ -130,11 +133,8 @@ document.addEventListener('alpine:init', () => {
                 const order = event[index];
                 sum += order.subtotal;
             }
+            this.number_orders_str = `Calculated from ${event.length} orders`;
             this.total = formatCurrencyGBP(sum);
-            if (event.length < 5) {
-                event.length = 5;
-                Array.from(event);
-            }
             this.top_ap_orders = event;
             this.loading = false;
         },

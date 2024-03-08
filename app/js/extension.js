@@ -6,7 +6,7 @@
  * @return {Promise<Array>} - an array of condensed sales information.
  */
 async function listSales(time_period) {
-    date_from = await getPeriodDate(time_period);
+    time_period_queries = await getPeriodDate(time_period);
     var list_options = {
         url: 'https://www.zohoapis.eu/books/v3/salesorders',
         method: "GET" ,
@@ -21,10 +21,14 @@ async function listSales(time_period) {
         {
             key: 'sort_column',
             value: 'created_time'
-        }],
+        }
+    ],
         connection_link_name: 'books_conn'
     };
+    list_options.url_query = list_options.url_query.concat(time_period_queries);
+    console.log(list_options);
     return ZFAPPS.request(list_options).then(async (response) => {
+        console.log(response);
         if (response.code != 0) {
             // something went wrong invoking the books API
             console.log("something went wrong invoking the books API");
@@ -34,6 +38,7 @@ async function listSales(time_period) {
             console.log(`books API returned ${response.data.status_code} status`);
         }
         salesorders = JSON.parse(response.data.body).salesorders;
+        page_context = JSON.parse(response.data.body).page_context;
         if (!salesorders.length || salesorders.length <= 0) {
             // no data to display for this period yet
             console.log(`No data to display since ${date_from}`);
@@ -41,42 +46,95 @@ async function listSales(time_period) {
         filtered_salesorders = [];
         awaiting_payment_data = [];
         sum_total = 0;
-        for (let index = 0; index < salesorders.length; index++) {
-            const order = salesorders[index];
-            if (order.order_sub_status != "") {
-                // Filter out order as it has a substatus but add to awaiting payment data.
-                ap_order_data = buildAPOrder(order);
-                ap_order_data ? awaiting_payment_data.push(ap_order_data) : null;
-                continue;
-            }
-            // Check created_time vs date_from
-            order_created = moment(order.created_time);
-            if (order_created.isBefore(date_from)) {
-                // Skip as it is before the date wanted, also can stop iterating
-                // because the orders are sorted in the response.
-                break;
-            }
-            filtered_order = {
-                "order_id": order.salesorder_id,
-                "order_number": order.salesorder_number,
-                "order_reference": order.reference_number,
-                "subtotal": order.total / 1.2,
-                "customer_name": order.customer_name,
-                "date": order.created_time
-            };
+        
+        extracted_data = iterateSalesordersList(salesorders);
 
-            sum_total += filtered_order.subtotal;
+        filtered_salesorders = filtered_salesorders.concat(extracted_data.salesorders);
+        awaiting_payment_data = awaiting_payment_data.concat(extracted_data.awaiting_payment);
 
-            filtered_salesorders.push(filtered_order);
+        page = 1;
+        while (page_context.has_more_page) {
+            page += 1;
+            list_options.url_query.push({
+                key: 'page',
+                value: page
+            });
+
+            ZFAPPS.request(list_options).then(async (response) => {
+                if (response.code != 0) {
+                    // something went wrong invoking the books API
+                    console.log("something went wrong invoking the books API");
+                }
+                if (response.data.status_code != 200) {
+                    // something went wrong invoking the books API
+                    console.log(`books API returned ${response.data.status_code} status`);
+                }
+                salesorders = JSON.parse(response.data.body).salesorders;
+                page_context = JSON.parse(response.data.body).page_context;
+                if (!salesorders.length || salesorders.length <= 0) {
+                    // no data to display for this period yet
+                    console.log(`No data to display`);
+                }
+                salesorders = JSON.parse(response.data.body).salesorders;
+                page_context = JSON.parse(response.data.body).page_context;
+                if (!salesorders.length || salesorders.length <= 0) {
+                    // no data to display for this period yet
+                    console.log(`No data to display`);
+                }
+            });
         }
+
+        salesorder_count = filtered_salesorders.length;
+
         awaitingPaymentEvent = new CustomEvent("awaiting-payment-data", {"detail": awaiting_payment_data});
         window.dispatchEvent(awaitingPaymentEvent);
         final_data = {
             total: sum_total,
-            orders: filtered_salesorders
+            orders: filtered_salesorders,
+            number_sales: salesorder_count
         };
         return final_data;
     });
+}
+/**
+ * Iterate the list of sales orders and extract the important data.
+ * 
+ * @param {Array} salesorders - the list of salesorders from Zoho
+ * @returns {Array} - An array containing two lists: filtered salesorders and awaiting payment orders 
+ */
+function iterateSalesordersList(salesorders) {
+    awaiting_payment_list = [];
+    filtered_salesorders_list = [];
+
+    for (let index = 0; index < salesorders.length; index++) {
+        const order = salesorders[index];
+        if (order.status == "draft") {
+            continue;
+        }
+        if (order.order_sub_status != "") {
+            // Filter out order as it has a substatus but add to awaiting payment data.
+            ap_order_data = buildAPOrder(order);
+            ap_order_data ? awaiting_payment_list.push(ap_order_data) : null;
+            continue;
+        }
+        filtered_order = {
+            "order_id": order.salesorder_id,
+            "order_number": order.salesorder_number,
+            "order_reference": order.reference_number,
+            "subtotal": order.total / 1.2,
+            "customer_name": order.customer_name,
+            "date": order.created_time
+        };
+
+        sum_total += filtered_order.subtotal;
+
+        filtered_salesorders_list.push(filtered_order);
+    }
+
+    return {
+        salesorders: filtered_salesorders_list,
+        awaiting_payment: awaiting_payment_list
+    };
 }
 
 /**
@@ -87,10 +145,6 @@ async function listSales(time_period) {
  */
 function buildAPOrder(order) {
     order_created = moment(order.created_time);
-    if (order_created.isBefore(date_from)) {
-        // Skip as it is before the date wanted
-        return null;
-    }
     return {
         "order_number": order.salesorder_number,
         "subtotal": order.total / 1.2,
@@ -113,7 +167,7 @@ function bucketData(order_data, time_range) {
     if (time_range == 'monthly') {
         days = moment().daysInMonth();
         time_series = Array.from({length: days}, (_, i) => i + 1);
-    } else if (time_range == 'weekly') {
+    } else if (time_range == 'weekly' || time_range == 'prevweek') {
         time_series = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     } else {
         time_series = [...Array(24).keys()];
@@ -127,7 +181,7 @@ function bucketData(order_data, time_range) {
         bucket_label = "";
         if (time_range == 'daily') {
             bucket_label = created_time.hour();
-        } else if (time_range == 'weekly') {
+        } else if (time_range == 'weekly' || time_range == 'prevweek') {
             bucket_label = created_time.isoWeekday();
         } else {
             bucket_label = created_time.date();
@@ -166,19 +220,39 @@ function bucketData(order_data, time_range) {
  * 
  * @async
  * @param {String} time_period - 'daily', 'weekly' or 'monthly' time period to fetch sales for.
- * @return {Promise<String>} - the date in format yyyy-MM-dd.
+ * @return {Promise<Array>} - the query parameters for the requested time period.
  */
 async function getPeriodDate(time_period) {
-    switch (time_period) {        
+    let query = [];
+    switch (time_period) {
+        case 'prevweek':
+            query.push({
+                key: "created_time_start",
+                value: moment().startOf('isoWeek').subtract(7, 'days').format('YYYY-MM-DD HH:mm')
+            });
+            query.push({
+                key: 'created_time_end',
+                value: moment().startOf('isoWeek').subtract(1, 'days').endOf('day').format('YYYY-MM-DD HH:mm')
+            });
+            break;
         case 'monthly':
-            date = moment().startOf('month');
+            query.push({
+                key: 'created_time_after',
+                value: moment().startOf('month').format('YYYY-MM-DD HH:mm')
+            });
             break;
         case 'weekly':
-            date = moment().startOf('isoWeek');
+            query.push({
+                key: 'created_time_after',
+                value: moment().startOf('isoWeek').format('YYYY-MM-DD HH:mm')
+            });
             break;
         default: // 'daily'
-            date = moment();
+            query.push({
+                key: 'created_time_after',
+                value: moment().startOf('day').format('YYYY-MM-DD HH:mm')
+            })
             break;
     }
-    return date.format('YYYY-MM-DD');
+    return query;
 }

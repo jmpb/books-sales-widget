@@ -45,12 +45,14 @@
 				<select x-model="time_range" @change.debounce="refreshData" class="border-solid border-sky-900 border-2 rounded" :disabled="loading">
 					<option value="daily">Today</option>
 					<option value="weekly">This week</option>
+					<option value="prevweek">Previous week</option>
 					<option value="monthly">This month</option>
 				</select>
 			</div>
 			<div id="updates" class="self-end">
 				<p class="text-xs italic p-4" x-text="last_updated"></p>
 				<p class="text-xs italic p-4" x-text="next_update"></p>
+				<p class="text-xs italic p-4" x-text="number_orders_str"></p>
 			</div>
 		</div>
 	</div>
@@ -99,6 +101,7 @@
 							</tr>
 						</template>
 					</table>
+					<p class="text-xs italic p-4" x-text="number_orders_str"></p>
 				</div>
 			</div>
 		</div>
