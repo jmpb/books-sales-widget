@@ -13,7 +13,7 @@ async function listSales(time_period) {
         method: "GET" ,
         url_query: [{
             key: 'organization_id',
-            value: '20067754174'
+            value: '<org-id>'
         },
         {
             key: 'customview_id',
