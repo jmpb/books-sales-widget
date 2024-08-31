@@ -22,7 +22,7 @@
     "serviceName": "zoho_books",
     "userAccess": true,
     "isUserDefinedService": false,
-    "sharedBy": "20067754174",
+    "sharedBy": "<org-id-number>",
     "scope": [
       "ZohoBooks.fullaccess.all"
     ]
